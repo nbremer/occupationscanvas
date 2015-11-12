@@ -15,7 +15,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		width = Math.max($("#chart").innerWidth(),350) - padding,
 		height = (window.innerWidth < 768 ? width : window.innerHeight - 90);
 
-	var mobileSize = (window.innerWidth < 768 ? true : false);
+	var mobileSize = true;
+	if (!("ontouchstart" in document.documentElement) | window.innerWidth > 900) mobileSize = false;
+	console.log(mobileSize);
 	
 	var centerX = width/2,
 		centerY = height/2;
@@ -612,6 +614,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	/////////////////////// FPS Stats box //////////////////////// 
 	////////////////////////////////////////////////////////////// 
 	
+	/*
 	var stats = new Stats();
 	stats.setMode(0); // 0: fps, 1: ms, 2: mb
 
@@ -626,6 +629,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		stats.begin();
 		stats.end();
 	});
+	*/
 	
 	////////////////////////////////////////////////////////////// 
 	/////////////////////// Initiate ///////////////////////////// 
