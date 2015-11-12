@@ -11,10 +11,6 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	////////////////// Create Set-up variables  ////////////////// 
 	////////////////////////////////////////////////////////////// 
 
-	var padding = 20,
-		width = Math.max($("#chart").innerWidth(),350) - padding,
-		height = (window.innerWidth < 768 ? width : window.innerHeight - 90);
-
 	//Trying to figure out how to detect touch devices (exept for laptops with touch screens)
 	//Since there's no need to have a mouseover function for touch
 	//There has to be a more foolproof way than this...
@@ -29,6 +25,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	}
 	var mobileSize = window.mobileAndTabletcheck();
 	
+	var padding = 20,
+		width = Math.max($("#chart").innerWidth(),350) - padding,
+		height = (mobileSize ? width : window.innerHeight - 90);
 
 	var centerX = width/2,
 		centerY = height/2;
