@@ -317,11 +317,11 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	//Setup the kids variable for the top (root) level			
 	for(var i = 0; i < root.children.length; i++) { kids.push(root.children[i].name) };	
 	
-	//Listen for clicks on the main canvas
-	document.getElementById("canvas").addEventListener("click", function(e){
+	//Function to run oif a user clicks on the canvas
+	var clickFunction = function(e){
 		//Figure out where the mouse click occurred.
-		var mouseX = e.layerX;
-		var mouseY = e.layerY;
+		var mouseX = e.offsetX; //e.layerX;
+		var mouseY = e.offsetY; //e.layerY;
 
 		// Get the corresponding pixel color on the hidden canvas and look up the node in our map.
 		// This will return that pixel's color
@@ -344,12 +344,25 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 				}//for i
 			}//if
 
+			//Temporarily disable click & mouseover events
+			$("#canvas").css("pointer-events", "none");
+		
+			//Remove all previous popovers - if present
+			$('.popoverWrapper').remove(); 
+			$('.popover').each(function() {
+					$('.popover').remove(); 	
+			}); 
+				 
 			//Perform the zoom
 			zoomToCanvas(node);			
 		}//if -> node
 		
-	}); //on click function
+	}//function clickFunction
 
+	//Listen for clicks on the main canvas
+	//document.getElementById("canvas").addEventListener("click", clickFunction);
+	$("#canvas").on("click", clickFunction);
+	
 	////////////////////////////////////////////////////////////// 
 	//////////////// Mousemove functionality ///////////////////// 
 	////////////////////////////////////////////////////////////// 
@@ -359,10 +372,10 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		var nodeOld = root;
 		
 		//Listen for mouse moves on the main canvas
-		document.getElementById("canvas").addEventListener("mousemove", function(e){
+		var mousemoveFunction = function(e){
 			//Figure out where the mouse click occurred.
-			var mouseX = e.layerX;
-			var mouseY = e.layerY;
+			var mouseX = e.offsetX; //e.layerX;
+			var mouseY = e.offsetY; //e.layerY;
 			
 			// Get the corresponding pixel color on the hidden canvas and look up the node in our map.
 			// This will return that pixel's color
@@ -415,7 +428,10 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			}//if -> node !== nodeOld
 			
 			nodeOld = node;
-		}); //on mousemove
+		}//function mousemoveFunction
+		
+		//document.getElementById("canvas").addEventListener("mousemove", mousemoveFunction);
+		$("#canvas").on("mousemove", mousemoveFunction);
 	
 	}//if !mobileSize
 
@@ -435,7 +451,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		
 	//Create the interpolation function between current view and the clicked on node
 	function zoomToCanvas(focusNode) {
-
+		
 		//Save the ID of the clicked on node (or its parent, if it is a leaf node)
 		//Only the nodes close to the currentID will have bar charts drawn
 		if (focusNode === focus) currentID = ""; 
@@ -511,6 +527,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			timeElapsed += dt;
 			textAlpha = ease(timeElapsed / fadeTextDuration);				
 			if (timeElapsed >= fadeTextDuration) {
+				//Enable click & mouseover events again
+				$("#canvas").css("pointer-events", "auto");
+				
 				fadeText = false; //Jump from loop after fade in is done
 				stopTimer = true; //After the fade is done, stop with the redraws / animation
 			}//if
