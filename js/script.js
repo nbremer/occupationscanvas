@@ -10,8 +10,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	////////////////// Create Set-up variables  ////////////////// 
 	////////////////////////////////////////////////////////////// 
 
-	var width = Math.max($("#chart").width(),350) - 20,
-		height = (window.innerWidth < 768 ? width : window.innerHeight - 20);
+	var padding = 20,
+		width = Math.max($("#chart").width(),350) - padding,
+		height = (window.innerWidth < 768 ? width : window.innerHeight - padding);
 
 	var mobileSize = (window.innerWidth < 768 ? true : false);
 
@@ -114,9 +115,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	///////////////// Canvas draw function ///////////////////////
 	////////////////////////////////////////////////////////////// 
 		
-	var cWidth = canvas.attr("width");
-	var cHeight = canvas.attr("height");
-	var nodeCount = nodes.length;
+	var cWidth = canvas.attr("width"),
+		cHeight = canvas.attr("height"),
+		nodeCount = nodes.length;
 
 	var elementsPerBar = 7,
 		barChartHeight = 0.7,
@@ -179,7 +180,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 						chosenContext.fillText("Total "+commaFormat(node.size)+" (in thousands)", nodeX, nodeY + -0.75 * nodeR);
 						
 						//Get the text back in pieces that will fit inside the node
-						var titleText = getLines(chosenContext, node.name, nodeR*2*0.7, fontSizeTitle);
+						var titleText = getLines(chosenContext, node.name, nodeR*2*0.7, fontSizeTitle, titleFont);
 						//Loop over all the pieces and draw each line
 						titleText.forEach(function(txt, iterator) { 
 							chosenContext.font = fontSizeTitle + "px " + titleFont;
@@ -282,7 +283,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 				if(node.name !== "occupation" & !hidden & showText & $.inArray(node.name, kids) >= 0) {
 					//Calculate the best font size for the non-leaf nodes
 					var fontSizeTitle = Math.round(nodeR / 10);
-					if (fontSizeTitle > 6) drawCircularText(chosenContext, node.name, fontSizeTitle, nodeX, nodeY, nodeR, rotationText[counter], 0);
+					if (fontSizeTitle > 6) drawCircularText(chosenContext, node.name, fontSizeTitle, titleFont, nodeX, nodeY, nodeR, rotationText[counter], 0);
 				}//if
 				counter = counter + 1;
 			}//if
@@ -345,6 +346,77 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	}); //on click function
 
 	////////////////////////////////////////////////////////////// 
+	//////////////// Mousemove functionality ///////////////////// 
+	////////////////////////////////////////////////////////////// 
+	
+	//Only run this if the user actually has a mouse
+	
+	if (!mobileSize) {
+		var nodeOld = root;
+		
+		document.getElementById("canvas").addEventListener("mousemove", function(e){
+			// We actually only need to draw the hidden canvas when there is an interaction. 
+			// This sketch can draw it on each loop, but that is only for demonstration.
+			drawCanvas(hiddenContext, true);
+
+			//Figure out where the mouse click occurred.
+			var mouseX = e.layerX;
+			var mouseY = e.layerY;
+			
+			// Get the corresponding pixel color on the hidden canvas and look up the node in our map.
+			// This will return that pixel's color
+			var col = hiddenContext.getImageData(mouseX, mouseY, 1, 1).data;
+			//Our map uses these rgb strings as keys to nodes.
+			var colString = "rgb(" + col[0] + "," + col[1] + ","+ col[2] + ")";
+			var node = colToCircle[colString];
+
+			//Only change the popover if the user mouses over something new
+			if(node !== nodeOld) {
+				//Remove all previous popovers
+				$('.popoverWrapper').remove(); 
+				$('.popover').each(function() {
+						$('.popover').remove(); 	
+				 }); 
+				//Only continue when the user mouses over an actual node
+				if(node) {
+					//Only show a popover for the leaf nodes
+					if(typeof node.ID !== "undefined") {
+						//Needed for placement
+						var nodeX = ((node.x - zoomInfo.centerX) * zoomInfo.scale) + centerX,
+							nodeY = ((node.y - zoomInfo.centerY) * zoomInfo.scale) + centerY,
+							nodeR = node.r * zoomInfo.scale;
+						
+						//Create the wrapper div for the popover
+						var div = document.createElement('div');
+						div.setAttribute('class', 'popoverWrapper');
+						document.body.appendChild(div);
+
+						$(".popoverWrapper").css({
+							'position':'absolute',
+							'top':nodeY-nodeR,
+							'left':nodeX+padding/2
+						});
+						
+						//Show the tooltip on the hovered over slice
+						$(".popoverWrapper").popover({
+							placement: 'auto top',
+							container: 'body',
+							trigger: 'manual',
+							html : true,
+							animation:false,
+							content: function() { 
+								return "<span class='nodeTooltip'>" + node.name + "</span>"; }
+							});
+						$(".popoverWrapper").popover('show');
+					}//if -> typeof node.ID !== "undefined"
+				}//if -> node
+			}//if -> node !== nodeOld
+			
+			nodeOld = node;
+		}); //on mousemove
+	
+	}//if !mobileSize
+	////////////////////////////////////////////////////////////// 
 	///////////////////// Zoom Function //////////////////////////
 	////////////////////////////////////////////////////////////// 
 	
@@ -405,72 +477,30 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			if (timeElapsed >= fadeTextDuration) fadeText = false; //Jump from loop after fade in is done
 		}//if
 	}//function interpolateFadeText
-	
+
 	////////////////////////////////////////////////////////////// 
 	//////////////////// Other Functions /////////////////////////
 	////////////////////////////////////////////////////////////// 
-	
-	//Generates the next color in the sequence, going from 0,0,0 to 255,255,255.
-	//From: https://bocoup.com/weblog/2d-picking-in-canvas
-	var nextCol = 1;
-	function genColor(){
-		var ret = [];
-		// via http://stackoverflow.com/a/15804183
-		if(nextCol < 16777215){
-		  ret.push(nextCol & 0xff); // R
-		  ret.push((nextCol & 0xff00) >> 8); // G 
-		  ret.push((nextCol & 0xff0000) >> 16); // B
-
-		  nextCol += 100; // This is exagerated for this example and would ordinarily be 1.
-		}
-		var col = "rgb(" + ret.join(',') + ")";
-		return col;
-	}//function genColor
-
-	//From http://stackoverflow.com/questions/2936112/text-wrap-in-a-canvas-element
-	function getLines(ctx, text, maxWidth, fontSize) {
-		var words = text.split(" ");
-		var lines = [];
-		var currentLine = words[0];
-
-		for (var i = 1; i < words.length; i++) {
-			var word = words[i];
-			ctx.font = fontSize + "px " + titleFont;
-			var width = ctx.measureText(currentLine + " " + word).width;
-			if (width < maxWidth) {
-				currentLine += " " + word;
-			} else {
-				lines.push(currentLine);
-				currentLine = word;
-			}
-		}
-		lines.push(currentLine);
-		return lines;
-	}//function getLines
-
 	
 	//The start angle in degrees for each of the non-node leaf titles
 	var rotationText = [-14,4,23,-18,-10.5,-20,20,20,46,-30,-25,-20,20,15,-30,-15,-45,12,-15,-16,15,15,5,18,5,15,20,-20,-25]; //The rotation of each arc text
 	
 	//Adjusted from: http://blog.graphicsgen.com/2015/03/html5-canvas-rounded-text.html
-	function drawCircularText(ctx, text, fontSize, centerX, centerY, radius, startAngle, kerning) {
+	function drawCircularText(ctx, text, fontSize, titleFont, centerX, centerY, radius, startAngle, kerning) {
 		// startAngle:   In degrees, Where the text will be shown. 0 degrees
 		//               if the top of the circle
 		// kearning:     0 for normal gap between letters. positive or
 		//               negative number to expand/compact gap in pixels
-		
-						//console.log(text);
-		//if(text == "Professional and related occupations") console.log(radius);
-		
-		startAngle = startAngle * (Math.PI / 180); // convert to radians
-		text = text.split("").reverse().join(""); // Reverse letters
-					
+				
 		//Setup letters and positioning
 		ctx.textBaseline = 'alphabetic';
 		ctx.textAlign = 'center'; // Ensure we draw in exact center
 		ctx.font = fontSize + "px " + titleFont;
 		ctx.fillStyle = "rgba(255,255,255," + textAlpha +")";
 
+		startAngle = startAngle * (Math.PI / 180); // convert to radians
+		text = text.split("").reverse().join(""); // Reverse letters
+		
 		//Rotate 50% of total angle for center alignment
 		for (var j = 0; j < text.length; j++) {
 			var charWid = ctx.measureText(text[j]).width;
@@ -494,7 +524,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		
 		ctx.restore(); //Restore to state as it was before transformations
 	}//function drawCircularText
-
+	
 	////////////////////////////////////////////////////////////// 
 	/////////////////////// FPS Stats box //////////////////////// 
 	////////////////////////////////////////////////////////////// 
@@ -516,11 +546,6 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	//First zoom to get the circles to the right location
 	zoomToCanvas(root);
 	
-	//context.textAlign = 'center'; // Ensure we draw in exact center
-	//context.font = 20 + "px " + titleFont;
-	//console.log(context.measureText("m").width);
-	//console.log(context.measureText("l").width);
-	
 	var dt = 0;
 	d3.timer(function(elapsed) {
 		stats.begin();
@@ -530,6 +555,48 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		drawCanvas(context);
 		stats.end();
 	});
-	
-	
+		
 }//drawAll
+
+	
+////////////////////////////////////////////////////////////// 
+//////////////////// Other Functions /////////////////////////
+////////////////////////////////////////////////////////////// 
+
+//Generates the next color in the sequence, going from 0,0,0 to 255,255,255.
+//From: https://bocoup.com/weblog/2d-picking-in-canvas
+var nextCol = 1;
+function genColor(){
+	var ret = [];
+	// via http://stackoverflow.com/a/15804183
+	if(nextCol < 16777215){
+	  ret.push(nextCol & 0xff); // R
+	  ret.push((nextCol & 0xff00) >> 8); // G 
+	  ret.push((nextCol & 0xff0000) >> 16); // B
+
+	  nextCol += 100; // This is exagerated for this example and would ordinarily be 1.
+	}
+	var col = "rgb(" + ret.join(',') + ")";
+	return col;
+}//function genColor
+
+//From http://stackoverflow.com/questions/2936112/text-wrap-in-a-canvas-element
+function getLines(ctx, text, maxWidth, fontSize, titleFont) {
+	var words = text.split(" ");
+	var lines = [];
+	var currentLine = words[0];
+
+	for (var i = 1; i < words.length; i++) {
+		var word = words[i];
+		ctx.font = fontSize + "px " + titleFont;
+		var width = ctx.measureText(currentLine + " " + word).width;
+		if (width < maxWidth) {
+			currentLine += " " + word;
+		} else {
+			lines.push(currentLine);
+			currentLine = word;
+		}
+	}
+	lines.push(currentLine);
+	return lines;
+}//function getLines
