@@ -1,0 +1,145 @@
+#chart {
+	font-family: 'Merriweather Sans', sans-serif;
+	font-size: 10px;
+	font-weight: 400;
+	color: #4c4c4c;
+	fill: #4c4c4c;
+	text-align: center;
+	cursor: default;
+}
+
+a,
+a:hover {
+	color: #333333;
+}
+
+.title {
+	font-family: 'Oswald', sans-serif;
+	color: #1c1c1c;
+	text-align: left;
+}
+
+#topTitle {
+	font-size: 36px;
+	line-height: 1.2;
+}
+
+#subTitle {
+	text-align: left;
+	margin-bottom: 20px;
+	font-size: 16px;
+	color: #BFBFBF;
+	font-family: 'Oswald', sans-serif;
+	font-weight: 300;
+}
+
+#topText{
+	text-align: left;
+	font-family: 'Merriweather Sans', sans-serif;
+	font-size: 11px;
+	/*margin-bottom: 10px;*/
+	line-height: 1.5;
+	color: #7D7D7D;
+}
+
+#searchTitle {
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+
+.form-control {
+	font-size: 11px;
+	font-family: 'Merriweather Sans', sans-serif;
+}
+
+.dropdown-menu {
+	font-size: 11px;
+	font-family: 'Merriweather Sans', sans-serif;
+}
+
+.dropdown-menu>.active>a,
+.dropdown-menu>.active>a:hover,
+.dropdown-menu>.active>a:focus  {
+	background-color: #7D7D7D;
+}
+
+#legendTitle {
+	text-align: left;
+	font-family: 'Oswald', sans-serif;
+	margin-bottom: 5px;
+	font-size: 13px;
+	color: #1c1c1c;
+}
+
+#legendText {
+	text-align: left;
+	margin-bottom: 10px;
+	font-size: 10px;
+	line-height: 1.5;
+	font-family: 'Merriweather Sans', sans-serif;
+	color: #7D7D7D;
+}
+
+.legendCircle {
+	stroke-width:1;
+	stroke:#757575;
+	stroke-dasharray:2 2;
+	fill:none;
+}
+
+.legendLine {
+	stroke-width: 1;
+	stroke: #E0E0E0;
+	shape-rendering: crispEdges;
+}
+
+.legendTitle {
+	fill: #333333;
+	font-family: 'Oswald', sans-serif;
+	text-anchor: middle;
+	font-size: 14px;
+}
+
+.legendSubTitle {
+	color: #BFBFBF;
+	text-anchor: middle;
+	font-size: 10px;
+	line-height: 1.2;
+	font-family: 'Merriweather Sans', sans-serif;
+}
+
+.legendText {
+	text-anchor: start;
+	font-size: 9px;
+}
+
+#attribution {
+	text-align: left;
+	margin-bottom: 20px;
+	margin-top: 10px;
+	font-size: 12px;
+	/*bottom: 0px;
+	position: fixed;*/
+	color: #bfbfbf;
+	font-family: 'Merriweather Sans', sans-serif;
+}
+
+@media (min-width: 768px) {
+	#loadText {
+		font-size: 24px;
+		top:40%;
+	}
+}
+
+.nodeTooltip {
+	color: #333333;
+	font-family: 'Oswald', sans-serif;
+	text-anchor: middle;
+	font-size: 12px;
+	text-align: center;
+}
+
+.popover{
+	text-align: center;
+	pointer-events: none;
+}

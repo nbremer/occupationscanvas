@@ -20,38 +20,78 @@
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 
-	<!-- Stylesheet -->
-	<style>
-		body { 
-			text-align: center; 
-		}
-		
-		/*canvas {
-			position: absolute;
-			top: 0;
-			left: 0;
-		}*/
-		
-		.popover{
-			text-align: center;
-			pointer-events: none;
-		}
-		
-		.nodeTooltip {
-			color: #333333;
-			font-family: 'Oswald', sans-serif;
-			text-anchor: middle;
-			font-size: 12px;
-			text-align: center;
-		}
+	<!-- Combobox script for the search box -->
+	<script src="js/bootstrap-combobox.js"></script>
+	<link href="css/bootstrap-combobox.css" rel="stylesheet">
 
-	</style>
+	<!-- Stylesheet -->
+	<link rel="stylesheet" href="css/style.css">
 	
 </head>
+
 <body>
+	<div id="cont" class="container-fluid">
+		
+		<div class="row text-center" style="margin-top: 20px;">
+			<div class="col-sm-4">
+				<div id="topTitle" class="title">A Closer Look at Labor</div>
+				<div id="subTitle">The number of employed persons by occupation & age | US</div>
+				<div id="topText">In this visualization you can investigate how the 146 million employed persons in 2014 were divided up between 
+								  ~550 different occupations. 
+								  The occupations are grouped and even subgrouped. 
+								  Each grey colored circle encloses all occupations that fall under its umbrella name. 
+								  Each white circle is finally an actual profession and further shows the age distribution within that occupation.
+								  You can click on any of the circles to zoom in or search for an occupation with the search box below
+				</div>
+				
+				<hr>
+								  
+				<div id="searchTitle" class="title">Find an Occupation</div>
+				<div class="form-group">			
+					<select id="searchBox" class="combobox input-large form-control" style="display: none;" onchange="searchEvent(this.value)">
+						 <option value="" selected="selected">Search...</option>
+					</select>
+				</div>
+				
+				<div class="row text-center" style=	"margin-top: 30px;">
+					<div class="col-sm-6">
+						<div id="legendTitle">Legend</div>
+						<div id="legendText">The size of each white circle is scaled according to the number of persons employed. 
+								 The bigger the circle, the more people who are working in that occupation
+						</div>
+					</div>
+					<div id="legendRowWrapper" class="col-sm-6">
+						<div id="legendTitle" style="text-align: center;">Number of employed persons</div>
+						<div class="legendSubTitle">in thousands</div>
+						<div id="legendCircles"></div>
+					</div>
+				</div>
+				
+			</div>
+			<div class="col-sm-8">
+				<div id="chart"></div>
+			</div>
+		</div>
+		
+		<!-- Attribution -->
+		<div class="row text-center">
+			<div class="col-sm-12">
+				<div id="attribution">
+					<span>Created by Nadieh Bremer | <a href="http://www.visualcinnamon.com" target="_blank">VisualCinnamon.com</a> | 
+					Data: <a href="http://www.bls.gov/cps/cpsaat11b.htm" target="_blank">Bureau of Labor Statistics</a></span>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+		
+	<script src="js/script.js"></script>
+</body>
+
+<!--<body>
 
 	<div id="chart"></div>
 	<script src="js/script.js"></script>
 	
-</body>
+</body>-->
 </html>

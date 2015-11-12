@@ -4,6 +4,7 @@ queue()
 	.defer(d3.json, "data/occupation.json")
 	.await(drawAll);
 	
+//Initiates practically everything
 function drawAll(error, ageCSV, idCSV, occupations) {
 
 	////////////////////////////////////////////////////////////// 
@@ -11,14 +12,14 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	////////////////////////////////////////////////////////////// 
 
 	var padding = 20,
-		width = Math.max($("#chart").width(),350) - padding,
-		height = (window.innerWidth < 768 ? width : window.innerHeight - padding);
+		width = Math.max($("#chart").innerWidth(),350) - padding,
+		height = (window.innerWidth < 768 ? width : window.innerHeight - 90);
 
 	var mobileSize = (window.innerWidth < 768 ? true : false);
-
+	
 	var centerX = width/2,
 		centerY = height/2;
-		
+
 	////////////////////////////////////////////////////////////// 
 	/////////////////////// Create SVG  /////////////////////// 
 	////////////////////////////////////////////////////////////// 
@@ -27,20 +28,19 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	var canvas  = d3.select("#chart").append("canvas")
 		.attr("id", "canvas")
 		.attr("width", width)
-		.attr("height", height)
-		//.style("display","none")
-		;
+		.attr("height", height);
+		
 	var context = canvas.node().getContext("2d");
 		context.clearRect(0, 0, width, height);
 	
 	//Create a hidden canvas in which each circle will have a different color
-	//We can use this to capture the clicked on circle
+	//We can use this to capture the clicked/hovered over on circle
 	var hiddenCanvas  = d3.select("#chart").append("canvas")
 		.attr("id", "hiddenCanvas")
 		.attr("width", width)
 		.attr("height", height)
-		.style("display","none")
-		;	
+		.style("display","none");
+		
 	var hiddenContext = hiddenCanvas.node().getContext("2d");
 		hiddenContext.clearRect(0, 0, width, height);
 
@@ -87,7 +87,12 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	var nodes = pack.nodes(occupations),
 		root = occupations,
 		focus = root,
-		nodeCount = nodes.length;;		
+		nodeCount = nodes.length;
+
+	var nodeByName = {};
+	nodes.forEach(function(d,i) {
+		nodeByName[d.name] = d;
+	});
 
 	////////////////////////////////////////////////////////////// 
 	///////////////// Create Bar Chart Data //////////////////////
@@ -118,7 +123,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	idCSV.forEach(function (d, i) { 
 		IDbyName[d.name] = d.ID; 
 	});	
-
+	
 	////////////////////////////////////////////////////////////// 
 	///////////////// Canvas draw function ///////////////////////
 	////////////////////////////////////////////////////////////// 
@@ -157,6 +162,10 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			var nodeX = ((node.x - zoomInfo.centerX) * zoomInfo.scale) + centerX,
 				nodeY = ((node.y - zoomInfo.centerY) * zoomInfo.scale) + centerY,
 				nodeR = node.r * zoomInfo.scale;
+				
+			//Use one node to reset the scale factor for the legend
+			if(i === 4) scaleFactor = node.value/(nodeR * nodeR); 
+						
 			//Draw each circle
 			chosenContext.beginPath();
 			chosenContext.arc(nodeX, nodeY, nodeR, 0,  2 * Math.PI, true);				
@@ -287,7 +296,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 				if(node.name !== "occupation" & !hidden & showText & $.inArray(node.name, kids) >= 0) {
 					//Calculate the best font size for the non-leaf nodes
 					var fontSizeTitle = Math.round(nodeR / 10);
-					if (fontSizeTitle > 6) drawCircularText(chosenContext, node.name, fontSizeTitle, titleFont, nodeX, nodeY, nodeR, rotationText[counter], 0);
+					if (fontSizeTitle > 4) drawCircularText(chosenContext, node.name.replace(/,? and /g, ' & '), fontSizeTitle, titleFont, nodeX, nodeY, nodeR, rotationText[counter], 0);
 				}//if
 				counter = counter + 1;
 			}//if
@@ -300,6 +309,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	/////////////////// Click functionality ////////////////////// 
 	////////////////////////////////////////////////////////////// 
 	
+	//Default values for variables - set to root
 	var currentID = "",
 		oldID = "",
 		kids = ["occupation"]; //needed to check which arced titles to show - only those close to the parent node
@@ -307,18 +317,12 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	//Setup the kids variable for the top (root) level			
 	for(var i = 0; i < root.children.length; i++) { kids.push(root.children[i].name) };	
 	
-	// Listen for clicks on the main canvas
+	//Listen for clicks on the main canvas
 	document.getElementById("canvas").addEventListener("click", function(e){
-				
-		// We actually only need to draw the hidden canvas when there is an interaction. 
-		// This sketch can draw it on each loop, but that is only for demonstration.
-		drawCanvas(hiddenContext, true);
-
 		//Figure out where the mouse click occurred.
 		var mouseX = e.layerX;
 		var mouseY = e.layerY;
 
-		
 		// Get the corresponding pixel color on the hidden canvas and look up the node in our map.
 		// This will return that pixel's color
 		var col = hiddenContext.getImageData(mouseX, mouseY, 1, 1).data;
@@ -329,13 +333,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		//If there was an actual node clicked on, zoom into this
 		if(node) {
 			//If the same node is clicked twice, set it to the top (root) level
-			if (focus !== node) {
-				//Save the ID of the clicked on node (or its parent, if it is a leaf node)
-				currentID = (typeof node.ID === "undefined" ? IDbyName[node.name] : node.ID.replace(/\.([^\.]*)$/, ""));
-			} else {
-				currentID = "";
-				node = root;
-			}//else
+			if (focus === node) node = root;
 			
 			//Save the names of the circle itself and first children
 			//Needed to check which arc titles to show
@@ -347,8 +345,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			}//if
 
 			//Perform the zoom
-			zoomToCanvas(node);
-			
+			zoomToCanvas(node);			
 		}//if -> node
 		
 	}); //on click function
@@ -361,11 +358,8 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	if (!mobileSize) {
 		var nodeOld = root;
 		
+		//Listen for mouse moves on the main canvas
 		document.getElementById("canvas").addEventListener("mousemove", function(e){
-			// We actually only need to draw the hidden canvas when there is an interaction. 
-			// This sketch can draw it on each loop, but that is only for demonstration.
-			drawCanvas(hiddenContext, true);
-
 			//Figure out where the mouse click occurred.
 			var mouseX = e.layerX;
 			var mouseY = e.layerY;
@@ -396,15 +390,16 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 						//Create the wrapper div for the popover
 						var div = document.createElement('div');
 						div.setAttribute('class', 'popoverWrapper');
-						document.body.appendChild(div);
+						document.getElementById('chart').appendChild(div);
 
+						//Position the wrapper right above the circle
 						$(".popoverWrapper").css({
 							'position':'absolute',
 							'top':nodeY-nodeR,
-							'left':nodeX+padding/2
+							'left':nodeX+padding*5/4
 						});
 						
-						//Show the tooltip on the hovered over slice
+						//Show the tooltip
 						$(".popoverWrapper").popover({
 							placement: 'auto top',
 							container: 'body',
@@ -440,15 +435,33 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		
 	//Create the interpolation function between current view and the clicked on node
 	function zoomToCanvas(focusNode) {
+
+		//Save the ID of the clicked on node (or its parent, if it is a leaf node)
+		//Only the nodes close to the currentID will have bar charts drawn
+		if (focusNode === focus) currentID = ""; 
+		else currentID = (typeof focusNode.ID === "undefined" ? IDbyName[focusNode.name] : focusNode.ID.replace(/\.([^\.]*)$/, ""));
+		
+		//Set the new focus
 		focus = focusNode;
 		var v = [focus.x, focus.y, focus.r * 2.05]; //The center and width of the new "viewport"
-		
-		interpolator = d3.interpolateZoom(vOld, v); //Create interpolation between current and new "viewport"
-					
+
+		//Create interpolation between current and new "viewport"
+		interpolator = d3.interpolateZoom(vOld, v);
+			
+		//Set the needed "zoom" variables
 		duration = 	Math.max(1500, interpolator.duration); //Interpolation gives back a suggested duration	 		
 		timeElapsed = 0; //Set the time elapsed for the interpolateZoom function to 0	
 		showText = false; //Don't show text during the zoom
 		vOld = v; //Save the "viewport" of the next state as the next "old" state
+		
+		//Only show the circle legend when not at a leaf node
+		if(typeof focusNode.children === "undefined") {
+			d3.select("#legendRowWrapper").style("opacity", 0);
+			d3.select(".legendWrapper").transition().duration(1000).style("opacity", 0);
+		} else {
+			d3.select("#legendRowWrapper").style("opacity", 1);
+			d3.select(".legendWrapper").transition().duration(1000).delay(duration).style("opacity", 1);
+		}//else
 		
 		//Start animation
 		stopTimer = false;
@@ -467,14 +480,24 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			zoomInfo.centerY = interpolator(t)[1];
 			zoomInfo.scale = diameter / interpolator(t)[2];
 		
-			//Remove the interpolater and set the fade text back into motion
+			//After iteration is done remove the interpolater and set the fade text back into motion
 			if (timeElapsed >= duration) {
 				interpolator = null;
 				showText = true;
 				fadeText = true;
 				timeElapsed = 0;
-			}//if
-		}//if
+				
+				//Draw the hidden canvas again, now that everything is settled in 
+				//to make sure it is in the same state as the visible canvas
+				//This way the tooltip and click work correctly
+				drawCanvas(hiddenContext, true);
+				
+				//Update the texts in the legend
+				d3.select(".legendWrapper").selectAll(".legendText")
+					.text(function(d) { return commaFormat(Math.round(scaleFactor * d * d / 10)*10); });
+				
+			}//if -> timeElapsed >= duration
+		}//if -> interpolator
 	}//function zoomToCanvas
 
 	//Text fading variables
@@ -503,10 +526,8 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	
 	//Adjusted from: http://blog.graphicsgen.com/2015/03/html5-canvas-rounded-text.html
 	function drawCircularText(ctx, text, fontSize, titleFont, centerX, centerY, radius, startAngle, kerning) {
-		// startAngle:   In degrees, Where the text will be shown. 0 degrees
-		//               if the top of the circle
-		// kearning:     0 for normal gap between letters. positive or
-		//               negative number to expand/compact gap in pixels
+		// startAngle:   In degrees, Where the text will be shown. 0 degrees if the top of the circle
+		// kearning:     0 for normal gap between letters. Positive or negative number to expand/compact gap in pixels
 				
 		//Setup letters and positioning
 		ctx.textBaseline = 'alphabetic';
@@ -540,7 +561,35 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		
 		ctx.restore(); //Restore to state as it was before transformations
 	}//function drawCircularText
+
+	////////////////////////////////////////////////////////////// 
+	///////////////////// Create Search Box ////////////////////// 
+	////////////////////////////////////////////////////////////// 
+
+	//Create options - all the occupations
+	var options = nodes.map(function(d) { return d.name; });
 	
+	var select = document.getElementById("searchBox"); 
+	//Put new options into select box
+	for(var i = 0; i < options.length; i++) {
+		var opt = options[i];
+		var el = document.createElement("option");
+		el.textContent = opt;
+		el.value = opt;
+		select.appendChild(el);
+	}
+
+	//Create combo box
+	$('.combobox').combobox();
+	
+	//Function to call once the search box is filled in
+	searchEvent = function(occupation) { 
+		//If the occupation is not equal to the default
+		if (occupation !== "" & typeof occupation !== "undefined") {
+			zoomToCanvas(nodeByName[occupation]);
+		}//if 
+	}//searchEvent
+		
 	////////////////////////////////////////////////////////////// 
 	/////////////////////// FPS Stats box //////////////////////// 
 	////////////////////////////////////////////////////////////// 
@@ -568,6 +617,11 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	zoomToCanvas(root);
 	//Draw the hidden canvas at least once
 	drawCanvas(hiddenContext, true);
+	//Draw the legend
+	var scaleFactor = 1; //dummy value
+	createLegend(scaleFactor);
+	//Slowly fade in so the scaleFactor is set to the correct value in the mean time :)
+	d3.select(".legendWrapper").transition().duration(1000).delay(500).style("opacity", 1);
 	
 	//Start the drawing loop. It will jump out of the loop once stopTimer becomes true
 	var stopTimer = false;
@@ -591,6 +645,19 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 ////////////////////////////////////////////////////////////// 
 //////////////////// Other Functions /////////////////////////
 ////////////////////////////////////////////////////////////// 
+
+//Needed in the global scope
+var searchEvent = function(occupation) { };
+	
+//If there is a scroll bar then its fine
+//But if there is no scrollbar prevent one from occuring when the user opens the search box
+//Otherwise the visual will seem to move to the left for a bit and that looks rather odd
+var noScrollBar = ($(document).height() > $(window).height() ? false : true);
+if(noScrollBar) {
+	//Prevent scroll bars from forming
+	document.documentElement.style.overflow = 'hidden';  // firefox, chrome
+	document.body.scroll = "no"; // ie only
+}//if
 
 //Generates the next color in the sequence, going from 0,0,0 to 255,255,255.
 //From: https://bocoup.com/weblog/2d-picking-in-canvas
@@ -629,3 +696,59 @@ function getLines(ctx, text, maxWidth, fontSize, titleFont) {
 	lines.push(currentLine);
 	return lines;
 }//function getLines
+
+////////////////////////////////////////////////////////////// 
+///////////// Function | The legend creation /////////////////
+////////////////////////////////////////////////////////////// 
+
+function createLegend(scaleFactor) {
+	var legendSizes = [10,20,30],
+		commaFormat = d3.format(',');
+		
+	//d3.select("#legendRowWrapper").style("opacity", 0);
+	
+	var width = $("#legendCircles").width(),
+		height = legendSizes[2]*2*1.2;
+
+	var	legendCenter = -10,
+		legendBottom = height,
+		legendLineLength = legendSizes[2]*1.3,
+		textPadding = 5
+		
+	//Create SVG for the legend
+	var svg = d3.select("#legendCircles").append("svg")
+		.attr("width", width)
+		.attr("height", height)
+	  .append("g")
+		.attr("class", "legendWrapper")
+		.attr("transform", "translate(" + width / 2 + "," + 0 + ")")
+		.style("opacity", 0);
+	
+	//Draw the circles
+	svg.selectAll(".legendCircle")
+		.data(legendSizes)
+		.enter().append("circle")
+		.attr('r', function(d) { return d; })
+		.attr('class',"legendCircle")
+		.attr('cx', legendCenter)
+		.attr('cy', function(d) { return legendBottom-d; });
+	//Draw the line connecting the top of the circle to the number
+	svg.selectAll(".legendLine")
+		.data(legendSizes)
+		.enter().append("line")
+		.attr('class',"legendLine")
+		.attr('x1', legendCenter)
+		.attr('y1', function(d) { return legendBottom-2*d; })
+		.attr('x2', legendCenter + legendLineLength)
+		.attr('y2', function(d) { return legendBottom-2*d; });	
+	//Place the value next to the line
+	svg.selectAll(".legendText")
+		.data(legendSizes)
+		.enter().append("text")
+		.attr('class',"legendText")
+		.attr('x', legendCenter + legendLineLength + textPadding)
+		.attr('y', function(d) { return legendBottom-2*d; })
+		.attr('dy', '0.3em')
+		.text(function(d) { return commaFormat(Math.round(scaleFactor * d * d / 10)*10); });
+		
+}//createLegend
