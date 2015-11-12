@@ -343,16 +343,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 					kids.push(node.children[i].name)
 				}//for i
 			}//if
-
-			//Temporarily disable click & mouseover events
-			$("#canvas").css("pointer-events", "none");
-		
-			//Remove all previous popovers - if present
-			$('.popoverWrapper').remove(); 
-			$('.popover').each(function() {
-					$('.popover').remove(); 	
-			}); 
-				 
+ 
 			//Perform the zoom
 			zoomToCanvas(node);			
 		}//if -> node
@@ -447,11 +438,19 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		interpolator = null,
 		duration = 1500, //Starting duration
 		vOld = [focus.x, focus.y, focus.r * 2.05];
-
-		
+	
 	//Create the interpolation function between current view and the clicked on node
 	function zoomToCanvas(focusNode) {
 		
+		//Temporarily disable click & mouseover events
+		$("#canvas").css("pointer-events", "none");
+	
+		//Remove all previous popovers - if present
+		$('.popoverWrapper').remove(); 
+		$('.popover').each(function() {
+				$('.popover').remove(); 	
+		}); 
+					
 		//Save the ID of the clicked on node (or its parent, if it is a leaf node)
 		//Only the nodes close to the currentID will have bar charts drawn
 		if (focusNode === focus) currentID = ""; 
@@ -598,7 +597,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		select.appendChild(el);
 	}
 
-	//Create combo box
+	//Create search combo box
 	$('.combobox').combobox();
 	
 	//Function to call once the search box is filled in
@@ -646,6 +645,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	var stopTimer = false;
 	animate();
 	
+	//This function runs during changes in the visual - during a zoom
 	function animate() {
 		var dt = 0;
 		d3.timer(function(elapsed) {
