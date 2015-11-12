@@ -27,7 +27,9 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	var canvas  = d3.select("#chart").append("canvas")
 		.attr("id", "canvas")
 		.attr("width", width)
-		.attr("height", height);
+		.attr("height", height)
+		//.style("display","none")
+		;
 	var context = canvas.node().getContext("2d");
 		context.clearRect(0, 0, width, height);
 	
@@ -37,7 +39,8 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		.attr("id", "hiddenCanvas")
 		.attr("width", width)
 		.attr("height", height)
-		.style("display","none");	
+		.style("display","none")
+		;	
 	var hiddenContext = hiddenCanvas.node().getContext("2d");
 		hiddenContext.clearRect(0, 0, width, height);
 
@@ -67,7 +70,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		centerY: centerY,
 		scale: 1
 	};
-
+	
 	//Dataset to swtich between color of a circle (in the hidden canvas) and the node data	
 	var colToCircle = {};
 	
@@ -83,23 +86,28 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 
 	var nodes = pack.nodes(occupations),
 		root = occupations,
-		focus = root;		
+		focus = root,
+		nodeCount = nodes.length;;		
 
 	////////////////////////////////////////////////////////////// 
 	///////////////// Create Bar Chart Data //////////////////////
 	////////////////////////////////////////////////////////////// 
 	
+	//Turn the value into an actual numeric value
 	ageCSV.forEach(function(d) { d.value = +d.value; });
  
+	//Create new dataset grouped by ID
 	data = d3.nest()
 		.key(function(d) { return d.ID; })
 		.entries(ageCSV);
-	
+		
+	//Find the max value per ID - needed for the bar scale setting per mini bar chart
 	dataMax = d3.nest()
 		.key(function(d) { return d.ID; })
 		.rollup(function(d) { return d3.max(d, function(g) {return g.value;}); })
 		.entries(ageCSV);
 
+	//Array to keep track of which ID belongs to which index in the array
 	var dataById = {};
 	data.forEach(function (d, i) { 
 		dataById[d.key] = i; 
@@ -115,10 +123,6 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	///////////////// Canvas draw function ///////////////////////
 	////////////////////////////////////////////////////////////// 
 		
-	var cWidth = canvas.attr("width"),
-		cHeight = canvas.attr("height"),
-		nodeCount = nodes.length;
-
 	var elementsPerBar = 7,
 		barChartHeight = 0.7,
 		barChartHeightOffset = 0.15;
@@ -128,7 +132,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 
 		//Clear canvas
 		chosenContext.fillStyle = "#fff";
-		chosenContext.rect(0,0,cWidth,cHeight);
+		chosenContext.rect(0,0,width,height);
 		chosenContext.fill();
 	  
 		//Select our dummy nodes and draw the data to canvas.
@@ -149,7 +153,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			} else {
 				chosenContext.fillStyle = node.children ? colorCircle(node.depth) : "white";
 			}//else
-		
+	
 			var nodeX = ((node.x - zoomInfo.centerX) * zoomInfo.scale) + centerX,
 				nodeY = ((node.y - zoomInfo.centerY) * zoomInfo.scale) + centerY,
 				nodeR = node.r * zoomInfo.scale;
@@ -305,6 +309,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	
 	// Listen for clicks on the main canvas
 	document.getElementById("canvas").addEventListener("click", function(e){
+				
 		// We actually only need to draw the hidden canvas when there is an interaction. 
 		// This sketch can draw it on each loop, but that is only for demonstration.
 		drawCanvas(hiddenContext, true);
@@ -313,6 +318,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		var mouseX = e.layerX;
 		var mouseY = e.layerY;
 
+		
 		// Get the corresponding pixel color on the hidden canvas and look up the node in our map.
 		// This will return that pixel's color
 		var col = hiddenContext.getImageData(mouseX, mouseY, 1, 1).data;
@@ -320,6 +326,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		var colString = "rgb(" + col[0] + "," + col[1] + ","+ col[2] + ")";
 		var node = colToCircle[colString];
 
+		//If there was an actual node clicked on, zoom into this
 		if(node) {
 			//If the same node is clicked twice, set it to the top (root) level
 			if (focus !== node) {
@@ -343,6 +350,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 			zoomToCanvas(node);
 			
 		}//if -> node
+		
 	}); //on click function
 
 	////////////////////////////////////////////////////////////// 
@@ -350,7 +358,6 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 	////////////////////////////////////////////////////////////// 
 	
 	//Only run this if the user actually has a mouse
-	
 	if (!mobileSize) {
 		var nodeOld = root;
 		
@@ -416,6 +423,7 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		}); //on mousemove
 	
 	}//if !mobileSize
+
 	////////////////////////////////////////////////////////////// 
 	///////////////////// Zoom Function //////////////////////////
 	////////////////////////////////////////////////////////////// 
@@ -436,11 +444,16 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		var v = [focus.x, focus.y, focus.r * 2.05]; //The center and width of the new "viewport"
 		
 		interpolator = d3.interpolateZoom(vOld, v); //Create interpolation between current and new "viewport"
-		
+					
 		duration = 	Math.max(1500, interpolator.duration); //Interpolation gives back a suggested duration	 		
 		timeElapsed = 0; //Set the time elapsed for the interpolateZoom function to 0	
 		showText = false; //Don't show text during the zoom
 		vOld = v; //Save the "viewport" of the next state as the next "old" state
+		
+		//Start animation
+		stopTimer = false;
+		animate();
+		
 	}//function zoomToCanvas
 	
 	//Perform the interpolation and continuously change the zoomInfo while the "transition" occurs
@@ -474,7 +487,10 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 		if(fadeText) {
 			timeElapsed += dt;
 			textAlpha = ease(timeElapsed / fadeTextDuration);				
-			if (timeElapsed >= fadeTextDuration) fadeText = false; //Jump from loop after fade in is done
+			if (timeElapsed >= fadeTextDuration) {
+				fadeText = false; //Jump from loop after fade in is done
+				stopTimer = true; //After the fade is done, stop with the redraws / animation
+			}//if
 		}//if
 	}//function interpolateFadeText
 
@@ -539,22 +555,35 @@ function drawAll(error, ageCSV, idCSV, occupations) {
 
 	document.body.appendChild( stats.domElement );
 
+	d3.timer(function(elapsed) {
+		stats.begin();
+		stats.end();
+	});
+	
 	////////////////////////////////////////////////////////////// 
 	/////////////////////// Initiate ///////////////////////////// 
 	////////////////////////////////////////////////////////////// 
 			
 	//First zoom to get the circles to the right location
 	zoomToCanvas(root);
+	//Draw the hidden canvas at least once
+	drawCanvas(hiddenContext, true);
 	
-	var dt = 0;
-	d3.timer(function(elapsed) {
-		stats.begin();
-		interpolateZoom(elapsed - dt);
-		interpolateFadeText(elapsed - dt);
-		dt = elapsed;
-		drawCanvas(context);
-		stats.end();
-	});
+	//Start the drawing loop. It will jump out of the loop once stopTimer becomes true
+	var stopTimer = false;
+	animate();
+	
+	function animate() {
+		var dt = 0;
+		d3.timer(function(elapsed) {
+			interpolateZoom(elapsed - dt);
+			interpolateFadeText(elapsed - dt);
+			dt = elapsed;
+			drawCanvas(context);
+
+			return stopTimer;
+		});
+	}//function animate
 		
 }//drawAll
 
